@@ -255,3 +255,6 @@ Este projeto é licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE
   - Fluxo de configuração pela interface
   - Descoberta automática de dispositivos
   - Controle de posição (abrir, fechar, definir posição)
+
+- **1.0.6** (2026-01-04)
+  - Bug fixes
