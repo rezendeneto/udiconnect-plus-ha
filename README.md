@@ -46,16 +46,32 @@ IMPORTANTE: No momento, todo e qualquer dispositivo da conta será automaticamen
 
 ### Método 2: Instalação Manual
 
-1. **Copie o componente customizado:**
+1. **Baixe e copie os arquivos:**
    ```bash
    # Navegue até o diretório de configuração do Home Assistant
    cd /config
 
-   # Crie o diretório custom_components se não existir
-   mkdir -p custom_components
+   # Baixe o repositório
+   wget https://github.com/rezendeneto/udiconnect-plus-ha/archive/refs/heads/master.zip
+   unzip master.zip
 
-   # Clone o repositório
-   git clone https://github.com/rezendeneto/udiconnect-plus-ha.git custom_components/udiconnect_plus
+   # Copie a integração para custom_components
+   cp -r udiconnect-plus-ha-master/custom_components/udiconnect_plus custom_components/
+
+   # Limpe os arquivos temporários
+   rm -rf udiconnect-plus-ha-master master.zip
+   ```
+
+   **OU usando git:**
+   ```bash
+   # Clone temporariamente o repositório
+   git clone https://github.com/rezendeneto/udiconnect-plus-ha.git /tmp/udiconnect-plus-ha
+
+   # Copie apenas a pasta da integração
+   cp -r /tmp/udiconnect-plus-ha/custom_components/udiconnect_plus /config/custom_components/
+
+   # Limpe o repositório temporário
+   rm -rf /tmp/udiconnect-plus-ha
    ```
 
 2. **Reinicie o Home Assistant**
@@ -118,7 +134,7 @@ Adicione ao seu `configuration.yaml`:
 logger:
   default: info
   logs:
-    custom_components.yale_connect: debug
+    custom_components.udiconnect_plus: debug
 ```
 
 Em seguida, reinicie o Home Assistant e verifique os logs.
@@ -140,18 +156,24 @@ Esta integração usa a API Udiconnect Plus:
 ## Estrutura de Arquivos
 
 ```
-custom_components/udiconnect_plus/
-├── translations/
-│   └── en.json        # Traduções em inglês
-├── __init__.py          # Ponto de entrada do componente
-├── api.py              # Implementação do cliente da API
-├── config_flow.py      # Fluxo de configuração da interface
-├── const.py            # Constantes e configuração
-├── cover.py            # Plataforma de entidade de cobertura
-├── icon.png            # Ícone do componente
-├── icon@2.png          # Ícone do componente (2x)
-├── manifest.json       # Metadados do componente
-└── README.md          # Este arquivo
+udiconnect-plus-ha/
+├── custom_components/
+│   └── udiconnect_plus/
+│       ├── translations/
+│       │   └── en.json        # Traduções em inglês
+│       ├── __init__.py        # Ponto de entrada do componente
+│       ├── api.py             # Implementação do cliente da API
+│       ├── config_flow.py     # Fluxo de configuração da interface
+│       ├── const.py           # Constantes e configuração
+│       ├── cover.py           # Plataforma de entidade de cobertura
+│       ├── icon.png           # Ícone do componente
+│       ├── icon@2x.png        # Ícone do componente (2x)
+│       └── manifest.json      # Metadados do componente
+├── .gitignore                 # Arquivos ignorados pelo git
+├── hacs.json                  # Configuração HACS
+├── info.md                    # Informações para HACS
+├── LICENSE                    # Licença MIT
+└── README.md                  # Este arquivo
 ```
 
 ## Desenvolvimento
