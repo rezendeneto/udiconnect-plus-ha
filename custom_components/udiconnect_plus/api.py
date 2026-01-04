@@ -131,7 +131,6 @@ class UdiconnectPlusAPI:
                         "device_category": x.get("category"),
                         "device_firmware_version": x.get("currentFirmwareVersion"),
                         "device_position": x.get("state"),
-                        "device_icon": x.get("icon"),
                         "device_model": x.get("deviceModelDescription"),
                     },
                     b.get("deviceList"),

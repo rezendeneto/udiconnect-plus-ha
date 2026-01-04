@@ -67,7 +67,6 @@ class UdiconnectPlusCover(CoordinatorEntity, CoverEntity):
             "manufacturer": "Udiconnect Plus",
             "model": self._device.get("device_model", "Unknown"),
             "sw_version": self._device.get("device_firmware_version", "Unknown"),
-            "picture": self._device.get("device_icon"),
         }
 
     @property
@@ -142,7 +141,3 @@ class UdiconnectPlusCover(CoordinatorEntity, CoverEntity):
             )
             await self.coordinator.async_request_refresh()
 
-    @property
-    def entity_picture(self) -> str | None:
-        """Return the entity picture."""
-        return self._device.get("device_icon")
