@@ -1,0 +1,13 @@
+{
+  "domain": "udiconnect_plus",
+  "name": "Udiconnect Plus",
+  "version": "1.0.0",
+  "documentation": "https://github.com/rezendeneto/udiconnect-plus-ha",
+  "issue_tracker": "https://github.com/rezendeneto/udiconnect-plus-ha/issues",
+  "codeowners": ["@rezendeneto"],
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "dependencies": [],
+  "after_dependencies": [],
+  "integration_type": "hub"
+}
