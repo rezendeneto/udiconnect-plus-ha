@@ -1,7 +1,7 @@
 {
   "domain": "udiconnect_plus",
   "name": "Udiconnect Plus",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "documentation": "https://github.com/rezendeneto/udiconnect-plus-ha",
   "issue_tracker": "https://github.com/rezendeneto/udiconnect-plus-ha/issues",
   "codeowners": ["@rezendeneto"],
