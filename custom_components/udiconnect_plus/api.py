@@ -9,19 +9,27 @@ from .const import BASE_URL, BRAND_PLATFORM_GUID
 
 _LOGGER = logging.getLogger(__name__)
 
+_LOGIN_PAYLOAD = {
+    "mobileInformation": {
+        "os": "Android 13",
+        "information": "Samsung SM-G998B",
+        "appVersion": "4.8.8",
+        "pushToken": "fcm_token",
+        "UUID": "device-uuid",
+    }
+}
+
 
 class UdiconnectPlusAPI:
     """Udiconnect Plus API Client."""
 
     def __init__(self, email: str, password: str):
-        """Initialize the API client."""
         self.email = email
         self.password = password
         self.access_token: Optional[str] = None
         self.session = requests.Session()
 
     def _get_headers(self, authenticated: bool = True) -> Dict[str, str]:
-        """Get request headers."""
         headers = {
             "Content-Type": "application/json",
             "brandPlatformGUID": BRAND_PLATFORM_GUID,
@@ -30,119 +38,95 @@ class UdiconnectPlusAPI:
             headers["access-token"] = self.access_token
         return headers
 
-    # API Endpoints
     def login(self) -> bool:
         """Login and get access token."""
-
         url = f"{BASE_URL}/Account/Login"
-        headers = self._get_headers(authenticated=False)
-
         payload = {
             "email": self.email,
             "password": self.password,
-            "mobileInformation": {
-                "os": "Android 13",
-                "information": "Samsung SM-G998B",
-                "appVersion": "4.8.8",
-                "pushToken": "fcm_token",
-                "UUID": "device-uuid",
-            },
+            **_LOGIN_PAYLOAD,
         }
-
         try:
-            response = self.session.post(url, headers=headers, json=payload)
+            response = self.session.post(
+                url, headers=self._get_headers(authenticated=False), json=payload
+            )
             response.raise_for_status()
-
-            data = response.json()
-            self.access_token = data.get("accessToken")
-
+            self.access_token = response.json().get("accessToken")
             if self.access_token:
-                _LOGGER.info("Successfully logged in to Udiconnect Plus")
+                _LOGGER.info("Logged in to Udiconnect Plus")
                 return True
-            else:
-                _LOGGER.error("No access token in login response")
-                return False
-
+            _LOGGER.error("No access token in login response")
+            return False
         except requests.exceptions.RequestException as err:
             _LOGGER.error("Login failed: %s", err)
             return False
 
+    def _post(self, path: str, payload: dict) -> Optional[dict]:
+        """POST with automatic token refresh on 401."""
+        url = f"{BASE_URL}{path}"
+        for attempt in range(2):
+            try:
+                response = self.session.post(
+                    url, headers=self._get_headers(), json=payload, timeout=10
+                )
+                if response.status_code == 401 and attempt == 0:
+                    _LOGGER.warning("Token expired, re-logging in")
+                    if self.login():
+                        continue
+                    return None
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as err:
+                _LOGGER.error("Request to %s failed: %s", path, err)
+                return None
+        return None
+
     def sync_account(self) -> Optional[Dict[str, Any]]:
         """Sync account data and get all devices."""
-
-        url = f"{BASE_URL}/App/SyncAccount"
-        headers = self._get_headers()
-
-        try:
-            response = self.session.post(url, headers=headers, json={})
-            response.raise_for_status()
-            return response.json()
-
-        except requests.exceptions.RequestException as err:
-            _LOGGER.error("Sync account failed: %s", err)
-            return None
+        return self._post("/App/SyncAccount", {})
 
     def set_curtain_position(self, device_id: str, position: int) -> bool:
         """Set curtain to absolute position (0-100)."""
+        data = self._post(
+            "/Curtain/SetPositionCurtain",
+            {"action": "CurtainSetPosition", "deviceId": device_id, "position": position},
+        )
+        if data and data.get("result") is True:
+            _LOGGER.debug("Set curtain %s to position %d", device_id, position)
+            return True
+        _LOGGER.error("Failed to set curtain %s position: %s", device_id, data)
+        return False
 
-        headers = self._get_headers()
-        url = f"{BASE_URL}/Curtain/SetPositionCurtain"
-
-        payload = {
-            "action": "CurtainSetPosition",
-            "deviceId": device_id,
-            "position": position,
-        }
-
-        try:
-            response = self.session.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-
-            data = response.json()
-
-            if data.get("result") == True:
-                _LOGGER.debug("Set curtain %s to position %d", device_id, position)
-                return True
-            else:
-                _LOGGER.error("Failed to set curtain position: %s", data.get("message"))
-                return False
-
-        except requests.exceptions.RequestException as err:
-            _LOGGER.error("Failed to set curtain position: %s", err)
-            return None
-
-    # Utility methods
     def get_devices(self) -> List[Dict[str, Any]]:
         """Get all devices from all homes."""
-
         account_data = self.sync_account()
         if not account_data:
             return []
 
         devices = reduce(
-            lambda a, b: a
-            + list(
-                map(
-                    lambda x: {
-                        "home_id": b.get("homeId"),
-                        "home_description": b.get("description"),
-                        "device_id": x.get("deviceId"),
-                        "device_description": x.get("description"),
-                        "device_category": x.get("category"),
-                        "device_firmware_version": x.get("currentFirmwareVersion"),
-                        "device_position": x.get("state"),
-                        "device_model": x.get("deviceModelDescription"),
-                    },
-                    b.get("deviceList"),
-                )
-            ),
-            account_data.get("account").get("homeList"),
+            lambda acc, home: acc + [
+                {
+                    "home_id": home.get("homeId"),
+                    "home_description": home.get("description"),
+                    "device_id": x.get("deviceId"),
+                    "device_description": x.get("description"),
+                    "device_category": x.get("category"),
+                    "device_firmware_version": x.get("currentFirmwareVersion"),
+                    "device_position": x.get("state"),
+                    "device_model": x.get("deviceModelDescription"),
+                    "is_online": x.get("isOnline", True),
+                    "is_calibrating": x.get("isCalibrating", False),
+                    "low_battery": x.get("lowBattery", False),
+                    "new_firmware_available": x.get("newFirmwareAvailable", False),
+                }
+                for x in home.get("deviceList", [])
+            ],
+            account_data.get("account", {}).get("homeList", []),
             [],
         )
 
-        _LOGGER.info("Found %d devices", len(devices))
+        _LOGGER.debug("Found %d devices", len(devices))
         return devices
 
     def close(self):
-        """Close the session."""
         self.session.close()
