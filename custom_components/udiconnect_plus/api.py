@@ -119,6 +119,8 @@ class UdiconnectPlusAPI:
         if not account_data:
             return []
 
+        home_list = (account_data.get("account") or {}).get("homeList") or []
+
         devices = reduce(
             lambda a, b: a
             + list(
@@ -133,12 +135,15 @@ class UdiconnectPlusAPI:
                         "device_position": x.get("state"),
                         "device_model": x.get("deviceModelDescription"),
                     },
-                    b.get("deviceList"),
+                    b.get("deviceList") or [],
                 )
             ),
-            account_data.get("account").get("homeList"),
+            home_list,
             [],
         )
+
+        if not devices:
+            _LOGGER.warning("SyncAccount returned no devices - keeping previous state")
 
         _LOGGER.info("Found %d devices", len(devices))
         return devices
