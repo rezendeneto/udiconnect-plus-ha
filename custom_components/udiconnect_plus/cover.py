@@ -79,6 +79,19 @@ class UdiconnectPlusCover(CoordinatorEntity, CoverEntity):
         }
 
     @property
+    def available(self) -> bool:
+        """Return True if the device is reporting a valid position."""
+        if not super().available:
+            return False
+        position = self._device.get("device_position")
+        if position is None:
+            return False
+        try:
+            return 0 <= int(position) <= 100
+        except (TypeError, ValueError):
+            return False
+
+    @property
     def current_cover_position(self) -> int | None:
         """Return current position of cover (0 closed, 100 open)."""
         # Update device data from coordinator
@@ -90,7 +103,15 @@ class UdiconnectPlusCover(CoordinatorEntity, CoverEntity):
         # Get position from device state
         position = self._device.get("device_position")
         if position is not None:
-            return int(position)
+            position = int(position)
+            if 0 <= position <= 100:
+                return position
+            _LOGGER.warning(
+                "Ignoring out-of-range position %s for device %s",
+                position,
+                self._device.get("device_id"),
+            )
+            return None
         return None
 
     @property
