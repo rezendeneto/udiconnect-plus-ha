@@ -9,6 +9,11 @@ from .const import BASE_URL, BRAND_PLATFORM_GUID
 
 _LOGGER = logging.getLogger(__name__)
 
+# Requests must never block the DataUpdateCoordinator forever. If the cloud
+# accepts the connection but never answers, requests without a timeout hang
+# indefinitely, silently stalling the 10s polling loop with no error logged.
+REQUEST_TIMEOUT = 15
+
 
 class UdiconnectPlusAPI:
     """Udiconnect Plus API Client."""
@@ -50,7 +55,9 @@ class UdiconnectPlusAPI:
         }
 
         try:
-            response = self.session.post(url, headers=headers, json=payload)
+            response = self.session.post(
+                url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT
+            )
             response.raise_for_status()
 
             data = response.json()
@@ -74,7 +81,9 @@ class UdiconnectPlusAPI:
         headers = self._get_headers()
 
         try:
-            response = self.session.post(url, headers=headers, json={})
+            response = self.session.post(
+                url, headers=headers, json={}, timeout=REQUEST_TIMEOUT
+            )
             response.raise_for_status()
             return response.json()
 
@@ -95,7 +104,9 @@ class UdiconnectPlusAPI:
         }
 
         try:
-            response = self.session.post(url, headers=headers, json=payload)
+            response = self.session.post(
+                url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT
+            )
             response.raise_for_status()
 
             data = response.json()
