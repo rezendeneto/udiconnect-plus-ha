@@ -6,6 +6,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import UdiconnectPlusAPI
@@ -27,8 +28,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     login_success = await hass.async_add_executor_job(api.login)
 
     if not login_success:
-        _LOGGER.error("Failed to login to Udiconnect Plus")
-        return False
+        # Usually a cloud hiccup: let Home Assistant retry setup instead of
+        # leaving the integration failed until a manual reload.
+        raise ConfigEntryNotReady("Failed to login to Udiconnect Plus")
 
     async def async_update_data():
         """Fetch data from API."""

@@ -13,7 +13,10 @@ CONF_EMAIL = "E-Mail"
 CONF_PASSWORD = "Password"
 
 # Default values
-DEFAULT_SCAN_INTERVAL = 10 # seconds
+# Every poll is a full account sync against the vendor cloud; at 10 s the cloud
+# answered with intermittent 500/503s. Commands trigger an immediate refresh anyway.
+DEFAULT_SCAN_INTERVAL = 60  # seconds
+REQUEST_TIMEOUT = 15  # seconds; requests has no default, so a stalled call hung forever
 
 # Attributes
 ATTR_DEVICE_ID = "device_id"

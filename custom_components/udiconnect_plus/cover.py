@@ -10,9 +10,11 @@ from homeassistant.components.cover import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .api import UdiconnectPlusError
 from .const import (
     ATTR_DEVICE_ID,
     ATTR_DEVICE_MODEL,
@@ -87,10 +89,14 @@ class UdiconnectPlusCover(CoordinatorEntity, CoverEntity):
                 self._device = device
                 break
 
-        # Get position from device state
-        position = self._device.get("device_position")
-        if position is not None:
-            return int(position)
+        # The cloud has been seen returning non-numeric and out-of-range states;
+        # report those as unknown instead of crashing or showing a bogus position.
+        try:
+            position = int(self._device.get("device_position"))
+        except (TypeError, ValueError):
+            return None
+        if 0 <= position <= 100:
+            return position
         return None
 
     @property
@@ -101,43 +107,29 @@ class UdiconnectPlusCover(CoordinatorEntity, CoverEntity):
             return position == 0
         return None
 
-    def open_cover(self, **kwargs: Any) -> None:
-        """Open the cover."""
-        self._api.set_curtain_position(self._device.get("device_id"), 100)
-        self.coordinator.async_request_refresh()
-
-    def close_cover(self, **kwargs: Any) -> None:
-        """Close the cover."""
-        self._api.set_curtain_position(self._device.get("device_id"), 0)
-        self.coordinator.async_request_refresh()
-
-    def set_cover_position(self, **kwargs: Any) -> None:
-        """Move the cover to a specific position."""
-        position = kwargs.get("position")
-        if position is not None:
-            self._api.set_curtain_position(self._device.get("device_id"), position)
-            self.coordinator.async_request_refresh()
+    async def _async_set_position(self, position: int) -> None:
+        """Send a position and surface cloud failures to the caller."""
+        try:
+            await self.hass.async_add_executor_job(
+                self._api.set_curtain_position, self._device.get("device_id"), position
+            )
+        except UdiconnectPlusError as err:
+            # Raising makes the service call fail visibly, so scripts and
+            # automations can retry or notify instead of assuming it moved.
+            raise HomeAssistantError(f"{self.name}: {err}") from err
+        finally:
+            await self.coordinator.async_request_refresh()
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self.hass.async_add_executor_job(
-            self._api.set_curtain_position, self._device.get("device_id"), 100
-        )
-        await self.coordinator.async_request_refresh()
+        await self._async_set_position(100)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover."""
-        await self.hass.async_add_executor_job(
-            self._api.set_curtain_position, self._device.get("device_id"), 0
-        )
-        await self.coordinator.async_request_refresh()
+        await self._async_set_position(0)
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position."""
         position = kwargs.get("position")
         if position is not None:
-            await self.hass.async_add_executor_job(
-                self._api.set_curtain_position, self._device.get("device_id"), position
-            )
-            await self.coordinator.async_request_refresh()
-
+            await self._async_set_position(position)
