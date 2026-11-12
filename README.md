@@ -143,7 +143,7 @@ Em seguida, reinicie o Home Assistant e verifique os logs.
 
 Esta integração usa a API Udiconnect Plus:
 
-- **URL Base**: `https://AA-Brands.yaleconnect-services.com/api/YaleConnect/`
+- **URL Base**: `https://api.connectservices.assaabloy.com/api/YaleConnect/`
 - **Autenticação**: Token de acesso via login com email/senha
 - **Método de Atualização**: Polling (baseado na nuvem, sem API local)
 
