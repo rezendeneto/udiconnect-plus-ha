@@ -1,5 +1,12 @@
 # Udiconnect Plus - Componente Customizado para Home Assistant
 
+> [!WARNING]
+> **Projeto descontinuado / Project sunset**
+>
+> 🇧🇷 Este repositório foi algo que montei como prova de conceito, sem dedicar muito tempo a ele, e agora está descontinuado. Por favor, utilize o [henriquekraemer/udiconnect-plus-ha](https://github.com/henriquekraemer/udiconnect-plus-ha), onde a integração foi implementada de forma muito melhor. Agradeço ao Henrique por todo o esforço que ele dedicou ao projeto!
+>
+> 🇺🇸 This repository was something I put together as a proof of concept and didn't spend much time on. It has now been sunset in favor of [henriquekraemer/udiconnect-plus-ha](https://github.com/henriquekraemer/udiconnect-plus-ha), where the integration is much better implemented. Thanks to Henrique for all the effort he's put into it!
+
 Integração customizada do Home Assistant para cortinas, persianas e outros dispositivos inteligentes Udiconnect Plus.
 
 ## Recursos
